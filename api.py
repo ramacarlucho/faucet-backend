@@ -50,7 +50,6 @@ def authorize_recaptcha(token):
 
 def request_faucet(address):
     builder = TransactionBuilder(SEED)
-    print (address)
     msg = create_msg_send(builder.address, address, 100)
     res = builder.send_tx(Transaction().generate_tx(builder, msg))
     dictResponse = MessageToDict(res)
@@ -59,7 +58,6 @@ def request_faucet(address):
     return dictResponse['txResponse']['txhash'], ""
 
 def verify_address(address):
-    # TODO FIX ISSUE
     if address.startswith('evmos'):
         return eth_to_evmos(evmos_to_eth(address)) == address
     if address.startswith('0x'):
@@ -69,6 +67,8 @@ def verify_address(address):
 
 @app.post("/faucet/", response_model=FaucetResponse)
 def faucet(address: Address, Authorization: str = Header(None)):
+    if not verify_address(address.address):
+        return {'transactionHash': None, 'error':"Invalid Address"}
     canRequest = db.set_address(address.address)
     authorized = authorize_recaptcha(Authorization)
     if canRequest and authorized:
